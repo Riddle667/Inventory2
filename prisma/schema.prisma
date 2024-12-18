@@ -13,75 +13,111 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
 model User {
-  id        Int   @id @default(autoincrement())
+  id        Int      @id @default(autoincrement())
   name      String
   lastName  String
   email     String   @unique
+  phone     String
+  image     String?
   password  String
   category  Category[]
   client    Client[]
+  product   Product[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model Product {
-  id        Int   @id @default(autoincrement())
-  name      String
+  id          Int      @id @default(autoincrement())
+  name        String
   description String
-  price     Float
-  stock     Int
+  price       Float
+  stock       Int
   category_id Int
-  category  Category @relation(fields: [category_id], references: [id])
-  order OrderProduct[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  user_id     Int
+  is_active   Boolean @default(true)
+  category    Category  @relation(fields: [category_id], references: [id])
+  user       User      @relation(fields: [user_id], references: [id])
+  images      Image[]
+  orders      OrderProduct[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
 
 model Category {
-  id        Int   @id @default(autoincrement())
+  id        Int      @id @default(autoincrement())
   name      String
   user_id   Int
   user      User     @relation(fields: [user_id], references: [id])
   products  Product[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([name, user_id])
 }
 
 model Client {
-  id        Int   @id @default(autoincrement())
-  name      String
-  lastName  String
-  rut      String? @unique
-  phone     String
-  user_id   Int
-  user      User     @relation(fields: [user_id], references: [id])
-  orders    Order[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          Int      @id @default(autoincrement())
+  name        String
+  lastName    String
+  address     String @default("Unknown Address")
+  rut         String?  @unique
+  phone       String
+  debt        Int    @default(0)
+  pay         Int    @default(0)
+  isBlackList Boolean @default(false)
+  user_id     Int
+  user        User     @relation(fields: [user_id], references: [id])
+  orders      Order[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
 
 model Order {
-  id        Int   @id @default(autoincrement())
-  total_price Int @default(0)
-  payment_method String?
-  client_id  Int
-  client     Client @relation(fields: [client_id], references: [id])
-  products OrderProduct[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              Int      @id @default(autoincrement())
+  paid            Boolean  @default(false)
+  total_price     Int      @default(0)
+  pay_method  String?
+  client_id       Int
+  client          Client   @relation(fields: [client_id], references: [id])
+  is_installment  Boolean  @default(false)
+  installments    Installment[] 
+  products        OrderProduct[]
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 }
 
-model OrderProduct{
-  id        Int   @id @default(autoincrement())
-  orderId   Int
-  order     Order @relation(fields: [orderId], references: [id])
-  productId Int
-  product   Product @relation(fields: [productId], references: [id])
-  quantity  Int
-  price_total Float
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model Installment {
+  id                Int      @id @default(autoincrement())
+  order_id           Int
+  installment_number Int
+  amount            Decimal
+  due_date          DateTime
+  paid              Boolean   @default(false)
+  Order             Order     @relation(fields: [order_id], references: [id])
+
+  @@unique([order_id, installment_number])
+}
+
+model OrderProduct {
+  id          Int      @id @default(autoincrement())
+  order_id     Int
+  order       Order    @relation(fields: [order_id], references: [id])
+  product_id   Int
+  product     Product  @relation(fields: [product_id], references: [id])
+  quantity    Int
+  total_price Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Image {
+  id         Int      @id @default(autoincrement())
+  url        String
+  product_id Int
+  product    Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 

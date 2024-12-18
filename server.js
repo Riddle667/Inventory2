@@ -1,6 +1,8 @@
 const { PrismaClient } = require('@prisma/client');
 const express = require('express');
-
+const cors = require('cors');
+const logger = require('morgan');
+const fileUpload = require('express-fileupload');
 
 class Server {
     constructor(){
@@ -11,6 +13,12 @@ class Server {
         this.paths = {
             auth: '/api/auth',
             user: '/api/user',
+            client: '/api/client',
+            category: '/api/category',
+            product: '/api/product',
+            upload: '/api/upload',
+            order: '/api/order',
+            statistics: '/api/statistics'
         }
 
         // Inicializar Prisma Client
@@ -37,12 +45,33 @@ class Server {
     }
 
     middlewares(){
+        // Morgan
+        this.app.use(logger('dev'));
+
+        // Read and parse body
         this.app.use(express.json());
+
+        // Cors
+        this.app.use(cors());
+
+        // fileUpload - load files
+        this.app.use(fileUpload({
+            useTempFiles: true,
+            tempFileDir: '/tmp/',
+            createParentPath: true
+        }));
     }
 
     routes(){
-        this.app.use(this.paths.user, require('./routes/user'));
-        this.app.use(this.paths.auth, require('./routes/auth'));
+        this.app.use(this.paths.user, require('./Routes/userRoutes'));
+        this.app.use(this.paths.auth, require('./Routes/authRoutes'));
+        this.app.use(this.paths.client, require('./Routes/clientRoutes'));
+        this.app.use(this.paths.category, require('./Routes/categoryRoutes'));
+        this.app.use(this.paths.product, require('./Routes/productRoutes'));
+        this.app.use(this.paths.upload, require('./Routes/uploadRoutes'));
+        this.app.use(this.paths.order, require('./Routes/orderRoutes'));
+        this.app.use(this.paths.statistics, require('./Routes/statisticsRoutes'));
+
     }
 
     listen(){
