@@ -383,7 +383,6 @@ const getWeeklyStatistics = async (req = request, res = response) => {
     }
 };
 
-
 const getPopularCategories = async (req = request, res = response) => {
     try {
         const popularCategories = await prisma.category.findMany({
@@ -399,10 +398,46 @@ const getPopularCategories = async (req = request, res = response) => {
     }
 };
 
+const getStatisticsProfile = async (req = request, res = response) => {
+  const userId = req.user.id;
+
+  try {
+    const [cantProduct, cantClient, cantOrder] = await Promise.all([
+      prisma.product.aggregate({
+        where: { user_id: userId },
+        _sum: { stock: true },
+      }),
+      prisma.client.count({ where: { user_id: userId } }),
+      prisma.order.count({
+        where: {
+          client: {
+            user_id: userId,
+          },
+        },
+      }),
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        cantProduct: cantProduct._sum.stock || 0,
+        cantClient,
+        cantOrder,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching user statistics:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+
+
 module.exports = {
     getStatisticsDashboard,
     getStatistics,
     getClientStatistics,
     getInventoryStatistics,
     getWeeklyStatistics,
+    getStatisticsProfile
 };

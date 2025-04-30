@@ -1,5 +1,6 @@
 const { Router } = require("express");
-const { getStatistics, getStatisticsDashboard } = require("../Controller/statisticsController");
+const { getStatistics, getStatisticsDashboard, getStatisticsProfile } = require("../Controller/statisticsController");
+const { validateJWT } = require("../Middleware/validate-jwt");
 
 
 const router = Router();
@@ -14,4 +15,9 @@ router.get(
     getStatisticsDashboard
 )
 
+router.get(
+    '/get-statistics-profile',
+    validateJWT,
+    getStatisticsProfile
+)
 module.exports = router;

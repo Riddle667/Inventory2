@@ -1,8 +1,9 @@
 const { Router } = require("express");
-const { login, register } = require("../Controller/authController");
+const { login, register, resetPasswordDev, logout } = require("../Controller/authController");
 const { check } = require("express-validator");
 const { verifyEmail, verifyEmailLogin } = require("../Helpers/verify-email");
 const { validateFields } = require("../Middleware/validate-fields");
+const { validateJWT } = require("../Middleware/validate-jwt");
 
 
 const router = Router();
@@ -16,6 +17,9 @@ router.post('/login',[
     ], 
     login 
 );
+
+router.post('/logout', validateJWT, logout);
+
 router.post('/register',[
     check('email').custom(verifyEmail),
     check('name', 'Name is required').not().isEmpty(),
@@ -25,5 +29,8 @@ router.post('/register',[
     check('password', 'Password is required').not().isEmpty(),
     validateFields
 ], register );
+
+router.post('/reset-password-dev', resetPasswordDev);
+
 
 module.exports = router;

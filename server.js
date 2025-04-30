@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const logger = require('morgan');
 const fileUpload = require('express-fileupload');
+const startCronJobs = require('./Helpers/cron');
 
 class Server {
     constructor(){
@@ -18,7 +19,8 @@ class Server {
             product: '/api/product',
             upload: '/api/upload',
             order: '/api/order',
-            statistics: '/api/statistics'
+            statistics: '/api/statistics',
+            alert: '/api/alert'
         }
 
         // Inicializar Prisma Client
@@ -32,6 +34,9 @@ class Server {
 
         // Database connection
         this.dbConnection();
+
+        // Start cron jobs
+        startCronJobs();
     }
 
     async dbConnection(){
@@ -71,9 +76,10 @@ class Server {
         this.app.use(this.paths.upload, require('./Routes/uploadRoutes'));
         this.app.use(this.paths.order, require('./Routes/orderRoutes'));
         this.app.use(this.paths.statistics, require('./Routes/statisticsRoutes'));
+        this.app.use(this.paths.alert, require('./Routes/alertRoutes'));
 
     }
-
+    
     listen(){
         this.Server.listen(this.port, () => {
             console.log(`Server running on port ${this.port}`);

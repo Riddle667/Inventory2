@@ -195,6 +195,7 @@ const getProduct = async (req = request, res = response) => {
                 },
                 include: {
                     images: true,
+                    category: true,
                     orders: {
                         include: {
                             order: {
@@ -221,7 +222,29 @@ const getProduct = async (req = request, res = response) => {
                 error: error.message
             });
         }
+}
+
+const updateProductStock = async (req = request, res = response) => {
+    try {
+        const { productId, newStock } = req.body;
+      // Actualiza el stock del producto
+      await prisma.product.update({
+        where: { id: productId },
+        data: { stock: newStock },
+      });
+  
+      // Si el stock es mayor al mínimo, elimina la alerta
+      if (newStock > 10) { // Suponiendo 10 como umbral mínimo
+        await deleteAlerts({
+          type: 'low_stock',
+          product_id: productId,
+        });
+      }
+      console.log('Stock actualizado correctamente.');
+    } catch (error) {
+      console.error('Error al actualizar el stock:', error.message);
     }
+  }
 
 module.exports = {
     createProduct,

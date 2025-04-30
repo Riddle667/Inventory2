@@ -1,5 +1,5 @@
 const { Router } = require("express");
-const { createOrder, editOrder, deleteOrder, getOrders, getOrder } = require("../Controller/orderController");
+const { createOrder, editOrder, deleteOrder, getOrders, getOrder, payOrder, payInstallmentOrder } = require("../Controller/orderController");
 const { check } = require("express-validator");
 const { validateJWT } = require("../Middleware/validate-jwt");
 
@@ -30,5 +30,17 @@ router.get('/get-orders',
 router.get('/get-order/:id',
     getOrder
 )
+
+router.put(
+    '/pay-order/:id',
+    validateJWT,
+    payOrder
+);
+
+router.put(
+    '/pay-installment-order/:id/:idInstallment',
+    validateJWT,
+    payInstallmentOrder
+);
 
 module.exports = router;

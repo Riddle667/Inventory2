@@ -277,10 +277,159 @@ const getOrder = async (req = request, res = response) => {
   }
 };
 
+const payOrder = async (req = request, res = response) => {
+  try {
+    const { id } = req.params;
+
+    // Marcar la orden como pagada
+    const updatedOrder = await prisma.order.update({
+      where: { id: parseInt(id) },
+      data: { paid: true }
+    });
+
+    const client = await prisma.client.findUnique({
+      where: { id: updatedOrder.client_id },
+    });
+
+    const newPay = client.pay + updatedOrder.total_price;
+
+    if (client.debt <= newPay) {
+      // Si la deuda ya se cubre, poner todo en 0 y dejar el excedente como pago
+      await prisma.client.update({
+        where: { id: client.id },
+        data: {
+          debt: 0,
+          pay: newPay - client.debt
+        }
+      });
+    } else {
+      // Si aún queda deuda, solo incrementar el monto pagado
+      await prisma.client.update({
+        where: { id: client.id },
+        data: {
+          pay: { increment: updatedOrder.total_price }
+        }
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Order paid successfully',
+      data: updatedOrder
+    });
+
+  } catch (error) {
+    console.error(error.message);
+    res.status(400).json({
+      success: false,
+      message: 'Failed to pay order',
+      error: error.message
+    });
+  }
+};
+
+const payInstallmentOrder = async (req = request, res = response) => {
+  try {
+    const { id, idInstallment } = req.params;
+
+    const order = await prisma.order.findUnique({
+      where: { id: parseInt(id) },
+      include: { installments: true },
+    });
+
+    const targetInstallment = order.installments.find(
+      inst => inst.id === parseInt(idInstallment)
+    );
+
+    if (!targetInstallment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Installment not found'
+      });
+    }
+    console.log(targetInstallment);
+    if (targetInstallment.installment_number != 1){
+      // Verificar si todas las cuotas anteriores están pagadas
+      const previousUnpaid = order.installments
+        .filter(inst => inst.installment_number < targetInstallment.installment_number)
+        .some(inst => !inst.paid);
+
+      if (previousUnpaid) {
+        return res.status(400).json({
+          success: false,
+          message: 'You must pay previous installments first'
+        });
+      }
+    }
+
+    
+
+    // Marcar la cuota como pagada
+    const updatedInstallment = await prisma.installment.update({
+      where: { id: targetInstallment.id },
+      data: { paid: true }
+    });
+
+    // Actualizar el `pay` del cliente
+    await prisma.client.update({
+      where: { id: order.client_id },
+      data: {
+        pay: {
+          increment: targetInstallment.amount
+        }
+      }
+    });
+
+    // Verificar si ya todas las cuotas están pagadas
+    const allPaid = order.installments.every(inst =>
+      inst.id === targetInstallment.id ? true : inst.paid
+    );
+
+    if (allPaid) {
+      await prisma.order.update({
+        where: { id: order.id },
+        data: { paid: true }
+      });
+    }
+
+    // Lógica de deuda
+    const client = await prisma.client.findUnique({
+      where: { id: order.client_id },
+    });
+
+    if (client.pay >= client.debt) {
+      await prisma.client.update({
+        where: { id: client.id },
+        data: {
+          debt: 0,
+          pay: client.pay - client.debt
+        }
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Installment paid successfully',
+      data: updatedInstallment
+    });
+
+  } catch (error) {
+    console.error(error.message);
+    res.status(400).json({
+      success: false,
+      message: 'Failed to pay installment',
+      error: error.message
+    });
+  }
+};
+
+
 module.exports = {
   createOrder,
   editOrder,
   deleteOrder,
   getOrders,
-  getOrder
+  getOrder,
+  payOrder,
+  payInstallmentOrder
 };

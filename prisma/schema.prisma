@@ -21,9 +21,11 @@ model User {
   phone     String
   image     String?
   password  String
+  session_token String?
   category  Category[]
   client    Client[]
   product   Product[]
+  alerts    Alert[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -38,7 +40,7 @@ model Product {
   user_id     Int
   is_active   Boolean @default(true)
   category    Category  @relation(fields: [category_id], references: [id])
-  user       User      @relation(fields: [user_id], references: [id])
+  user       User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
   images      Image[]
   orders      OrderProduct[]
   createdAt   DateTime  @default(now())
@@ -49,7 +51,7 @@ model Category {
   id        Int      @id @default(autoincrement())
   name      String
   user_id   Int
-  user      User     @relation(fields: [user_id], references: [id])
+  user      User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
   products  Product[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -68,7 +70,7 @@ model Client {
   pay         Int    @default(0)
   isBlackList Boolean @default(false)
   user_id     Int
-  user        User     @relation(fields: [user_id], references: [id])
+  user        User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
   orders      Order[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -80,7 +82,7 @@ model Order {
   total_price     Int      @default(0)
   pay_method  String?
   client_id       Int
-  client          Client   @relation(fields: [client_id], references: [id])
+  client          Client   @relation(fields: [client_id], references: [id], onDelete: Cascade)
   is_installment  Boolean  @default(false)
   installments    Installment[] 
   products        OrderProduct[]
@@ -95,17 +97,16 @@ model Installment {
   amount            Decimal
   due_date          DateTime
   paid              Boolean   @default(false)
-  Order             Order     @relation(fields: [order_id], references: [id])
-
+  Order             Order     @relation(fields: [order_id], references: [id], onDelete: Cascade)
   @@unique([order_id, installment_number])
 }
 
 model OrderProduct {
   id          Int      @id @default(autoincrement())
   order_id     Int
-  order       Order    @relation(fields: [order_id], references: [id])
+  order       Order    @relation(fields: [order_id], references: [id], onDelete: Cascade)
   product_id   Int
-  product     Product  @relation(fields: [product_id], references: [id])
+  product     Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
   quantity    Int
   total_price Int      @default(0)
   createdAt   DateTime @default(now())
@@ -120,4 +121,21 @@ model Image {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
+
+model Alert {
+  id          Int       @id @default(autoincrement())
+  message     String
+  type        String    // Tipo de alerta (e.g., "low_stock", "debt_reminder")
+  is_read     Boolean   @default(false)
+  user_id     Int
+  user        User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  product_id  Int?      // (Opcional) Identificador del producto relacionado, si aplica
+  client_id   Int?      // (Opcional) Identificador del cliente relacionado, si aplica
+  priority    String  @default("LOW") // Nivel de importancia de la alerta
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([type, user_id, product_id, client_id]) // Restricción única para evitar duplicados
+}
+
 
