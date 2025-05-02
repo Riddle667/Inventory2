@@ -1,6 +1,5 @@
 node_modules
 .env
 inventory.jpg
-dev.db
-migrations
+prisma/dev.db
 inventary.jpg
