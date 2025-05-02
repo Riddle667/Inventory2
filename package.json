@@ -5,11 +5,9 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon app",
-    "build": "tsc",
     "start": "node app",
     "postinstall": "prisma generate",
-    "migrate:deploy": "prisma migrate deploy",
-    "seed": "ts-node prisma/seed.ts"
+    "migrate:deploy": "prisma migrate deploy"
   },
   "keywords": [],
   "author": "",
